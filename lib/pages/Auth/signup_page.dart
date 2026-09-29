@@ -1,10 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:ssehaty/pages/patients/patient_home.dart';
 
 import '../../core/constants/app_colors.dart';
-import '../doctors/doctor_home.dart';
 
 class SignupPage extends StatefulWidget {
   const SignupPage({super.key, required this.isDoctor});
@@ -23,10 +21,21 @@ class _SignupPageState extends State<SignupPage> {
 
   final formKey = GlobalKey<FormState>();
 
+  bool isLoading = false;
+
+  @override
+  void dispose() {
+    emailController.dispose();
+    passwordController.dispose();
+    nameController.dispose();
+    specialityController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Form(
           key: formKey,
@@ -38,7 +47,7 @@ class _SignupPageState extends State<SignupPage> {
 
               Text(
                 "انشا حساب الان كـ "
-                "${widget.isDoctor ? "دكتور" : "مريض"}",
+                    "${widget.isDoctor ? "دكتور" : "مريض"}",
                 style: TextStyle(
                   fontSize: 24,
                   color: AppColors.primary,
@@ -50,6 +59,7 @@ class _SignupPageState extends State<SignupPage> {
 
               TextFormField(
                 controller: emailController,
+                keyboardType: TextInputType.emailAddress,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return "enter email";
@@ -92,6 +102,9 @@ class _SignupPageState extends State<SignupPage> {
                   if (value == null || value.isEmpty) {
                     return "enter password";
                   }
+                  if (value.length < 6) {
+                    return "password must be at least 6 characters";
+                  }
                   return null;
                 },
                 decoration: InputDecoration(
@@ -126,7 +139,7 @@ class _SignupPageState extends State<SignupPage> {
               const SizedBox(height: 30),
 
               ElevatedButton(
-                onPressed: signup,
+                onPressed: isLoading ? null : signup,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   shape: RoundedRectangleBorder(
@@ -134,7 +147,9 @@ class _SignupPageState extends State<SignupPage> {
                   ),
                   fixedSize: Size(MediaQuery.of(context).size.width, 70),
                 ),
-                child: Text(
+                child: isLoading
+                    ? CircularProgressIndicator(color: AppColors.white)
+                    : Text(
                   "انشاء حساب",
                   style: TextStyle(fontSize: 30, color: AppColors.white),
                 ),
@@ -147,45 +162,38 @@ class _SignupPageState extends State<SignupPage> {
   }
 
   Future<void> signup() async {
-    if (!formKey.currentState!.validate()) {
-      return;
-    }
+    if (!formKey.currentState!.validate()) return;
 
-    final credential = await FirebaseAuth.instance
-        .createUserWithEmailAndPassword(
-          email: emailController.text.trim(),
-          password: passwordController.text.trim(),
-        );
+    setState(() => isLoading = true);
 
-    final user = credential.user;
-
-    if (user == null) {
-      return;
-    }
-
-    final role = widget.isDoctor ? "doctor" : "patient";
-
-    await FirebaseFirestore.instance.collection("users").doc(user.uid).set({
-      "name": nameController.text.trim(),
-      "email": emailController.text.trim(),
-      "role": role,
-      if (widget.isDoctor) "speciality": specialityController.text.trim(),
-    });
-
-    if (!mounted) {
-      return;
-    }
-
-    if (role == "doctor") {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => DoctorHome()),
+    try {
+      final credential = await FirebaseAuth.instance
+          .createUserWithEmailAndPassword(
+        email: emailController.text.trim(),
+        password: passwordController.text.trim(),
       );
-    } else {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => PatientHome()),
+
+      await FirebaseFirestore.instance
+          .collection("users")
+          .doc(credential.user!.uid)
+          .set({
+        "name": nameController.text.trim(),
+        "email": emailController.text.trim(),
+        "role": widget.isDoctor ? "doctor" : "patient",
+        if (widget.isDoctor) "speciality": specialityController.text.trim(),
+      });
+
+      // main.dart هو اللي بيقرر الشاشة حسب الـ role، فبنرجع له بس
+      if (!mounted) return;
+      Navigator.popUntil(context, (route) => route.isFirst);
+    } on FirebaseException catch (e) {
+      debugPrint("SIGNUP ERROR: ${e.code} - ${e.message}");
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("${e.code}: ${e.message}")),
       );
+    } finally {
+      if (mounted) setState(() => isLoading = false);
     }
   }
 }

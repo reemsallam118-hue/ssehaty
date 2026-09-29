@@ -14,20 +14,29 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  TextEditingController emailController = TextEditingController();
-  TextEditingController passwordController = TextEditingController();
-  GlobalKey<FormState> formKey = GlobalKey<FormState>();
+  final emailController = TextEditingController();
+  final passwordController = TextEditingController();
+  final formKey = GlobalKey<FormState>();
+
+  bool isLoading = false;
+
+  @override
+  void dispose() {
+    emailController.dispose();
+    passwordController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
         child: Form(
           key: formKey,
           child: Column(
             children: [
-              SizedBox(height: 100),
+              const SizedBox(height: 100),
               Image.asset("assets/logo.png", height: 200),
               Text(
                 "سجل دخول الان كـ ${widget.isDoctor ? "دكتور" : "مريض"}",
@@ -37,11 +46,12 @@ class _LoginPageState extends State<LoginPage> {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              SizedBox(height: 30),
+              const SizedBox(height: 30),
               TextFormField(
                 controller: emailController,
+                keyboardType: TextInputType.emailAddress,
                 validator: (value) {
-                  if (value!.isEmpty) {
+                  if (value == null || value.isEmpty) {
                     return "enter email";
                   }
                   return null;
@@ -50,16 +60,17 @@ class _LoginPageState extends State<LoginPage> {
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  hint: Text("email"),
+                  hintText: "email",
                   suffixIcon: Icon(Icons.email, color: AppColors.primary),
                 ),
               ),
-              SizedBox(height: 30),
+              const SizedBox(height: 30),
               TextFormField(
                 controller: passwordController,
+                obscureText: true,
                 validator: (value) {
-                  if (value!.isEmpty) {
-                    return "enter email";
+                  if (value == null || value.isEmpty) {
+                    return "enter password";
                   }
                   return null;
                 },
@@ -67,20 +78,13 @@ class _LoginPageState extends State<LoginPage> {
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  hint: Text("password"),
+                  hintText: "password",
                   suffixIcon: Icon(Icons.password, color: AppColors.primary),
                 ),
               ),
-              SizedBox(height: 30),
+              const SizedBox(height: 30),
               ElevatedButton(
-                onPressed: () async {
-                  if (formKey.currentState!.validate()) {
-                    await FirebaseAuth.instance.signInWithEmailAndPassword(
-                      email: emailController.text,
-                      password: passwordController.text,
-                    );
-                  }
-                },
+                onPressed: isLoading ? null : login,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   shape: RoundedRectangleBorder(
@@ -88,7 +92,9 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   fixedSize: Size(MediaQuery.of(context).size.width, 70),
                 ),
-                child: Text(
+                child: isLoading
+                    ? CircularProgressIndicator(color: AppColors.white)
+                    : Text(
                   "تسجيل الدخول",
                   style: TextStyle(fontSize: 30, color: AppColors.white),
                 ),
@@ -102,7 +108,7 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                   );
                 },
-                child: Text(
+                child: const Text(
                   "انشاء حساب جديد",
                   style: TextStyle(
                     fontSize: 30,
@@ -116,5 +122,30 @@ class _LoginPageState extends State<LoginPage> {
         ),
       ),
     );
+  }
+
+  Future<void> login() async {
+    if (!formKey.currentState!.validate()) return;
+
+    setState(() => isLoading = true);
+
+    try {
+      await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: emailController.text.trim(),
+        password: passwordController.text.trim(),
+      );
+
+      // main.dart هو اللي بيختار الشاشة حسب الـ role، فبنقفل صفحة اللوجين ونرجع له
+      if (!mounted) return;
+      Navigator.popUntil(context, (route) => route.isFirst);
+    } on FirebaseException catch (e) {
+      debugPrint("LOGIN ERROR: ${e.code} - ${e.message}");
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("${e.code}: ${e.message}")),
+      );
+    } finally {
+      if (mounted) setState(() => isLoading = false);
+    }
   }
 }

@@ -38,11 +38,12 @@ class MyApp extends StatelessWidget {
             return ChoiceScreen();
           }
 
-          return FutureBuilder<DocumentSnapshot>(
-            future: FirebaseFirestore.instance
+          // بنسمع للدوكيمنت نفسه، فأول ما signup تكتبه الشاشة بتتبدل لوحدها
+          return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+            stream: FirebaseFirestore.instance
                 .collection("users")
                 .doc(user.uid)
-                .get(),
+                .snapshots(),
             builder: (context, userSnapshot) {
               if (userSnapshot.connectionState == ConnectionState.waiting) {
                 return const Scaffold(
@@ -50,23 +51,10 @@ class MyApp extends StatelessWidget {
                 );
               }
 
-              if (userSnapshot.hasError ||
-                  !userSnapshot.hasData ||
-                  !userSnapshot.data!.exists) {
-                return ChoiceScreen();
-              }
+              final role = userSnapshot.data?.data()?["role"];
 
-              final data = userSnapshot.data!.data() as Map<String, dynamic>;
-
-              final role = data["role"];
-
-              if (role == "doctor") {
-                return DoctorHome();
-              }
-
-              if (role == "patient") {
-                return PatientHome();
-              }
+              if (role == "doctor") return DoctorHome();
+              if (role == "patient") return PatientHome();
 
               return ChoiceScreen();
             },

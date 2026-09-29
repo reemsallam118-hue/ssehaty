@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "258019225334",
-    "project_id": "ssshatey",
-    "storage_bucket": "ssshatey.firebasestorage.app"
+    "project_number": "292537211003",
+    "project_id": "ssehaty-dd8d3",
+    "storage_bucket": "ssehaty-dd8d3.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:258019225334:android:8dece2d69b9b2118d306d7",
+        "mobilesdk_app_id": "1:292537211003:android:0d0c70375c2e289860aade",
         "android_client_info": {
           "package_name": "com.example.ssehaty"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyDgtiSM8ve0KiwXx2ye2pNbSVX74TctthE"
+          "current_key": "AIzaSyDHjb0ux7MDPkx-uNg3XWQoK0cikUPBS7o"
         }
       ],
       "services": {

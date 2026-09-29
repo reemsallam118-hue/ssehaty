@@ -1,5 +1,9 @@
+
+
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:ssehaty/pages/patients/profile_screen.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../doctors/home.dart';
@@ -14,21 +18,26 @@ class PatientHome extends StatefulWidget {
 class _PatientHomeState extends State<PatientHome> {
   int currentIndex = 0;
 
-  List Pages = [Home(), Text("Search"), Text("Profile"), Text("appointment")];
+  final List<Widget> pages = [
+    Home(),
+    const Text("Search"),
+    const ProfileScreen(),
+    const Text("appointment"),
+  ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: AppColors.primary,
-        title: Text("صحتي"),
+        title: const Text("صحتي"),
         centerTitle: true,
         foregroundColor: AppColors.white,
         leading: IconButton(
           onPressed: () {
             FirebaseAuth.instance.signOut();
           },
-          icon: Icon(Icons.logout),
+          icon: const Icon(Icons.logout),
         ),
       ),
       bottomNavigationBar: BottomNavigationBar(
@@ -42,7 +51,7 @@ class _PatientHomeState extends State<PatientHome> {
             currentIndex = index;
           });
         },
-        items: [
+        items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
           BottomNavigationBarItem(icon: Icon(Icons.search), label: "Search"),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: "Profile"),
@@ -52,7 +61,7 @@ class _PatientHomeState extends State<PatientHome> {
           ),
         ],
       ),
-      body: Pages[currentIndex],
+      body: pages[currentIndex],
     );
   }
 }
